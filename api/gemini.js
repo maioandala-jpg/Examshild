@@ -1,15 +1,15 @@
 /* ExamShield — função serverless (Vercel). As chaves vivem só em variáveis de ambiente.
-   Variáveis: GEMINI_KEY_1 (obrigatória), GEMINI_KEY_2 (reserva), EXAMSHIELD_CODE (código dos professores),
+   Variáveis: GEMINI_KEY_1 (obrigatória), GEMINI_KEY_2 (reserva), EXAMSHIELD_CODE (opcional: código dos professores; sem ele o assistente fica aberto),
    GEMINI_MODEL (opcional, padrão gemini-2.5-flash). */
 const crypto = require('crypto');
 const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 const hits = new Map();
 let turn = 0;
 
-const limited = ip => {
+const limited = (ip, max) => {
   const n = Date.now(), w = (hits.get(ip) || []).filter(t => n - t < 60000);
   w.push(n); hits.set(ip, w); if (hits.size > 500) hits.clear();
-  return w.length > 20;
+  return w.length > max;
 };
 const same = (a, b) => {
   const x = Buffer.from(String(a)), y = Buffer.from(String(b));
@@ -34,17 +34,17 @@ module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') return res.status(405).json({ error: 'Método não permitido.' });
 
-  const code = process.env.EXAMSHIELD_CODE;
+  const code = process.env.EXAMSHIELD_CODE || '';
   const keys = [process.env.GEMINI_KEY_1, process.env.GEMINI_KEY_2].filter(Boolean);
-  if (!code || !keys.length) return res.status(500).json({ error: 'Servidor sem configuração: defina EXAMSHIELD_CODE e GEMINI_KEY_1.' });
+  if (!keys.length) return res.status(500).json({ error: 'Servidor sem configuração: defina GEMINI_KEY_1 nas variáveis de ambiente.' });
 
   let b = req.body;
   try { if (typeof b === 'string') b = JSON.parse(b); } catch (e) { b = null; }
   if (!b || typeof b !== 'object') return res.status(400).json({ error: 'Pedido inválido.' });
 
   const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || '?';
-  if (limited(ip)) return res.status(429).json({ error: 'Muitos pedidos. Aguarde um minuto.' });
-  if (!same(b.code || '', code)) return res.status(401).json({ error: 'Código do professor incorreto.' });
+  if (limited(ip, code ? 20 : 8)) return res.status(429).json({ error: 'Muitos pedidos. Aguarde um minuto.' });
+  if (code && !same(b.code || '', code)) return res.status(401).json({ error: 'Código do professor incorreto.' });
 
   const q = {
     text: str(b.q && b.q.text, 1500),
