@@ -74,7 +74,7 @@ body{font-family:system-ui,"Segoe UI",Arial,sans-serif;background:#e7e5e0;color:
     <h2 class="font-semibold mb-1">Passo 1c · Assistente de IA</h2>
     <p class="text-xs text-stone-600 mb-2">Reescreve questões mal formuladas e propõe a ligação à aula, com campos <b>[[assim]]</b> para você preencher. A IA propõe; você decide. Só o texto da questão, a disciplina e a turma são enviados ao servidor.</p>
     <div class="grid gap-1.5 text-sm">
-      <input id="gcode" type="password" autocomplete="off" class="border border-stone-300 rounded p-1.5 font-mono" placeholder="Código do professor">
+      <input id="gcode" type="password" autocomplete="off" class="border border-stone-300 rounded p-1.5 font-mono" placeholder="Código do professor (opcional)">
       <label><input type="checkbox" id="gsave"> Guardar o código neste dispositivo</label>
       <p id="gst" class="text-xs text-stone-600"></p>
     </div>
@@ -463,12 +463,12 @@ function reviewPanel(){
 
 /* ===== Assistente de IA: chama /api/gemini (as chaves ficam só no servidor) ===== */
 const CODE_LS='examshield.code',PROP={};
-function gStatus(){$('#gst').textContent=$('#gcode').value.trim()?'Código definido. O assistente está ativo.':'Introduza o código do professor para ativar o assistente.'}
+function gStatus(){$('#gst').textContent=$('#gcode').value.trim()?'Código definido.':'Sem código. Só é necessário se o servidor tiver um código configurado.'}
 function gSave(){try{if($('#gsave').checked)localStorage.setItem(CODE_LS,$('#gcode').value);else localStorage.removeItem(CODE_LS)}catch(e){}gStatus()}
 (function(){try{const s=localStorage.getItem(CODE_LS);if(s){$('#gcode').value=s;$('#gsave').checked=true}}catch(e){}
   ['gcode','gsave'].forEach(id=>$('#'+id).addEventListener('input',gSave));$('#gsave').addEventListener('change',gSave);gStatus()})();
 async function ask(q){
-  const code=$('#gcode').value.trim();if(!code)throw new Error('introduza o código do professor no passo 1c.');
+  const code=$('#gcode').value.trim();
   let r;
   try{r=await fetch('/api/gemini',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code,q:{text:q.text,opts:q.opts},disc:$('#disc').value,turma:$('#turma').value})})}
   catch(e){throw new Error('sem ligação ao servidor (abra o site publicado, não o ficheiro local).')}
