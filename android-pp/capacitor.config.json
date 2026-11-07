@@ -1,0 +1,9 @@
+{
+  "appId": "com.andala.examshield",
+  "appName": "ExamShield",
+  "webDir": "www",
+  "server": {
+    "url": "https://SEU-SITE.vercel.app",
+    "cleartext": false
+  }
+}
