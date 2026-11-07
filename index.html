@@ -9,6 +9,11 @@
 <meta name="author" content="João Paulo Andala Júnior e equipe">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ExamShield — Modo Papel · by Andala</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#1c1917">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <script src="https://cdn.tailwindcss.com/3.4.17"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
@@ -44,6 +49,7 @@ body{font-family:system-ui,"Segoe UI",Arial,sans-serif;background:#e7e5e0;color:
 <!-- ===================== PAINEL DO PROFESSOR ===================== -->
 <aside class="no-print space-y-3 lg:h-screen lg:overflow-y-auto lg:sticky lg:top-0 pr-1">
   <h1 class="text-2xl font-bold">ExamShield — Modo Papel <span class="text-sm font-semibold text-stone-500">by Andala</span></h1>
+  <button id="inst" class="chip" style="display:none">📲 Instalar app</button>
   <p class="text-sm text-stone-600">Tudo corre neste navegador. Nomes de alunos nunca saem do dispositivo. Só o texto de uma questão é enviado à Google, e apenas se você usar o assistente de IA (passo 1c).</p>
 
   <section class="bg-white rounded-lg p-3 border border-stone-300">
@@ -600,6 +606,13 @@ async function genVariants(){
 }
 $('#vgen').onclick=genVariants;
 $('#vclr').onclick=()=>{VARS.length=0;vRender();$('#vst').textContent='';render()};
+
+/* ===== PWA: instalar e abrir offline ===== */
+let dip;
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();dip=e;$('#inst').style.display=''});
+addEventListener('appinstalled',()=>{dip=null;$('#inst').style.display='none'});
+$('#inst').onclick=async()=>{if(!dip)return;dip.prompt();try{await dip.userChoice}catch(_){}dip=null;$('#inst').style.display='none'};
+if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('/sw.js').catch(()=>{});
 
 /* ===== Eventos ===== */
 function setLvl(l){lvl=l;$('#dI').value=PRE[l].dI;document.querySelectorAll('#lvls .chip').forEach(b=>b.classList.toggle('on',b.dataset.l===l));render()}
